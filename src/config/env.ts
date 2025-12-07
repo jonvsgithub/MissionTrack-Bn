@@ -42,3 +42,4 @@ export const env = {
   },
   uploadsDir: process.env.UPLOADS_DIR || path.resolve(process.cwd(), 'src', 'uploads')
 };
+
