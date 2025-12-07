@@ -1,36 +1,62 @@
 import { Request, Response } from 'express';
-import { userService } from '../services/user.service';
-import { successResponse } from '../utils/apiResponse';
+import { User } from '../models/user.model';
+import { AppError } from '../utils/appError';
 
-export class UserController {
-  create = async (req: Request, res: Response) => {
-    const user = await userService.createUser(req.body, req.user!.id);
-    return successResponse(res, 201, 'User created', user);
-  };
+export const userController = {
+  // List all users (admin only)
+  listUsers: async (req: Request, res: Response) => {
+    const users = await User.findAll({
+      attributes: { exclude: ['passwordHash'] },
+    });
 
-  update = async (req: Request, res: Response) => {
-    const { id } = req.params as { id: string };
-    const user = await userService.updateUser(id, req.body, req.user!.id);
-    return successResponse(res, 200, 'User updated', user);
-  };
+    res.status(200).json({
+      success: true,
+      message: 'Users retrieved successfully',
+      data: users,
+    });
+  },
 
-  assignRole = async (req: Request, res: Response) => {
-    const { id } = req.params as { id: string };
-    const user = await userService.assignRole(id, req.body.role, req.user!.id);
-    return successResponse(res, 200, 'Role updated', user);
-  };
+  // Get user by ID
+  getUserById: async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const user = await User.findByPk(id, {
+      attributes: { exclude: ['passwordHash'] },
+    });
 
-  disable = async (req: Request, res: Response) => {
-    const { id } = req.params as { id: string };
-    const user = await userService.disableUser(id, req.user!.id);
-    return successResponse(res, 200, 'User disabled', user);
-  };
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
 
-  list = async (_req: Request, res: Response) => {
-    const users = await userService.listUsers();
-    return successResponse(res, 200, 'Users retrieved', users);
-  };
-}
+    res.status(200).json({
+      success: true,
+      message: 'User retrieved successfully',
+      data: user,
+    });
+  },
 
-export const userController = new UserController();
+  // Update user status (admin only)
+  updateUserStatus: async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const user = await User.findByPk(id);
+
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    // Prevent admin from disabling themselves
+    if (user.id === req.user?.id && status === 'disabled') {
+      throw new AppError('You cannot disable your own account', 400);
+    }
+
+    await user.update({ status });
+
+    res.status(200).json({
+      success: true,
+      message: `User status updated to ${status}`,
+      data: user,
+    });
+  },
+};
 

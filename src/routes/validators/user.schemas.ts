@@ -17,6 +17,14 @@ export const updateUserSchema = z.object({
   status: z.enum(['active', 'disabled']).optional()
 });
 
+export const updateUserStatusSchema = z.object({
+  body: z.object({
+    status: z.enum(['active', 'disabled']).describe('User status'),
+  }),
+});
+
+export type UpdateUserStatusInput = z.infer<typeof updateUserStatusSchema>;
+
 export const assignRoleSchema = z.object({
   role: z.enum(['employee', 'manager', 'hr', 'finance', 'admin'])
 });
