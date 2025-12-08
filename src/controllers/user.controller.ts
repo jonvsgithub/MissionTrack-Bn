@@ -7,6 +7,7 @@ export const userController = {
   listUsers: async (req: Request, res: Response) => {
     const users = await User.findAll({
       attributes: { exclude: ['passwordHash'] },
+      order: [['createdAt', 'DESC']],
     });
 
     res.status(200).json({
@@ -38,6 +39,11 @@ export const userController = {
   updateUserStatus: async (req: Request, res: Response) => {
     const { id } = req.params;
     const { status } = req.body;
+
+    // Validate status value
+    if (!['active', 'disabled'].includes(status)) {
+      throw new AppError('Invalid status value. Must be "active" or "disabled"', 400);
+    }
 
     const user = await User.findByPk(id);
 
